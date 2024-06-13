@@ -12,7 +12,7 @@ services:
     env_file:
       - .env
   migrations:
-    image: vainnor/vzdc_website:1.1.0
+    image: vainnor/vzdc_website:1.0.0
     command: npx prisma migrate deploy
     environment:
       DATABASE_URL: postgres://${DB_USER:-vzdc}:${DB_PASSWORD:-admin}@db:5432/${DB_NAME:-website}
@@ -21,7 +21,7 @@ services:
     env_file:
       - .env
   website:
-    image: vainnor/vzdc_website:1.1.0
+    image: vainnor/vzdc_website:1.0.0
     restart: always
     ports:
       - "3000:3000"
