@@ -1,0 +1,140 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${PG_DB_USER}
+      POSTGRES_PASSWORD: ${PG_DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    env_file:
+      - stack.env
+
+  mysql:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_DB_PASSWORD}
+      MYSQL_DATABASE: ${TRAINING_DB_NAME}
+    volumes:
+      - mysql_db_data:/var/lib/mysql
+    env_file:
+      - stack.env
+
+  migrations_website:
+    image: vainnor/vzdc_website:1.0.17
+    command: npx prisma migrate deploy
+    environment:
+      DATABASE_URL: postgres://${PG_DB_USER}:${PG_DB_PASSWORD}@postgres:5432/${WEBSITE_DB_NAME}
+    depends_on:
+      - postgres
+    env_file:
+      - stack.env
+
+  website:
+    image: vainnor/vzdc_website:1.0.17
+    restart: always
+    ports:
+      - "80:3000"
+    depends_on:
+      - migrations_website
+      - postgres
+    environment:
+      DATABASE_URL: postgres://${PG_DB_USER}:${PG_DB_PASSWORD}@postgres:5432/${WEBSITE_DB_NAME}
+      DEV_MODE: ${WEBSITE_DEV_MODE}
+      NEXT_PUBLIC_GOOGLE_ANALYTICS_ID: ${WEBSITE_NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}
+      NEXT_PUBLIC_GOOGLE_CAPTCHA_SITE_KEY: ${WEBSITE_NEXT_PUBLIC_GOOGLE_CAPTCHA_SITE_KEY}
+      GOOGLE_CAPTCHA_SECRET_KEY: ${WEBSITE_GOOGLE_CAPTCHA_SECRET_KEY}
+      NEXTAUTH_URL: ${WEBSITE_NEXTAUTH_URL}
+      NEXTAUTH_SECRET: ${WEBSITE_NEXTAUTH_SECRET}
+      VATSIM_CLIENT_ID: ${WEBSITE_VATSIM_CLIENT_ID}
+      VATSIM_CLIENT_SECRET: ${WEBSITE_VATSIM_CLIENT_SECRET}
+      VATUSA_FACILITY: ${WEBSITE_VATUSA_FACILITY}
+      VATUSA_API_KEY: ${WEBSITE_VATUSA_API_KEY}
+      UPLOADTHING_SECRET: ${WEBSITE_UPLOADTHING_SECRET}
+      UPLOADTHING_APP_ID: ${WEBSITE_UPLOADTHING_APP_ID}
+      AWS_SMTP_FROM: ${WEBSITE_AWS_SMTP_FROM}
+      AWS_SMTP_HOST: ${WEBSITE_AWS_SMTP_HOST}
+      AWS_SMTP_PORT: ${WEBSITE_AWS_SMTP_PORT}
+      AWS_SMTP_USERNAME: ${WEBSITE_AWS_SMTP_USERNAME}
+      AWS_SMTP_PASSWORD: ${WEBSITE_AWS_SMTP_PASSWORD}
+    env_file:
+      - stack.env
+
+  migrations_ids:
+    image: vainnor/vzdc_ids:1.1.6
+    command: npx prisma migrate deploy
+    environment:
+      DATABASE_URL: postgres://${PG_DB_USER}:${PG_DB_PASSWORD}@postgres:5432/${IDS_DB_NAME}
+    depends_on:
+      - postgres
+    env_file:
+      - stack.env
+
+  ids:
+    image: vainnor/vzdc_ids:1.1.6
+    restart: always
+    ports:
+      - "81:3000"
+    depends_on:
+      - migrations_ids
+      - postgres
+    environment:
+      DATABASE_URL: postgres://${PG_DB_USER}:${PG_DB_PASSWORD}@postgres:5432/${IDS_DB_NAME}
+      DEV_MODE: ${IDS_DEV_MODE}
+      NEXTAUTH_URL: ${IDS_NEXTAUTH_URL}
+      NEXTAUTH_SECRET: ${IDS_NEXTAUTH_SECRET}
+      VATSIM_CLIENT_ID: ${IDS_VATSIM_CLIENT_ID}
+      VATSIM_CLIENT_SECRET: ${IDS_VATSIM_CLIENT_SECRET}
+      VATSIM_OAUTH_ENDPOINT: ${IDS_VATSIM_OAUTH_ENDPOINT}
+      VATUSA_FACILITY: ${IDS_VATUSA_FACILITY}
+      WEATHER_BRIEFING_VIDEO_LINK: ${IDS_WEATHER_BRIEFING_VIDEO_LINK}
+    env_file:
+      - stack.env
+
+  updater:
+    image: vainnor/vzdc_website_updater:1.0.1
+    restart: always
+    depends_on:
+      - website
+    environment:
+      NEXTAUTH_URL: ${WEBSITE_NEXTAUTH_URL}
+    env_file:
+      - stack.env
+
+  wiki:
+    image: mediawiki
+    restart: always
+    ports:
+      - "82:80"
+    volumes:
+      - wiki-images:/var/www/html/images
+      - sqlite-data:/var/www/data
+    depends_on:
+      - postgres
+    env_file:
+      - stack.env
+
+  training_scheduler:
+    image: alextselegidis/easyappointments
+    environment:
+      BASE_URL: ${TRAINING_BASE_URL}
+      DEBUG_MODE: TRUE
+      DB_HOST: mysql
+      DB_NAME: ${TRAINING_DB_NAME}
+      DB_USERNAME: ${MYSQL_DB_USER}
+      DB_PASSWORD: ${MYSQL_DB_PASSWORD}
+    ports:
+      - '83:80'
+    depends_on:
+      - mysql
+    env_file:
+      - stack.env
+
+volumes:
+  db_data:
+  mysql_db_data:
+  wiki-images:
+  sqlite-data:
