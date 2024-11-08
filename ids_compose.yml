@@ -12,6 +12,16 @@ services:
     env_file:
       - stack.env
       
+  migrations_ids:
+    image: vainnor/vzdc_ids:1.1.6
+    command: npx prisma migrate deploy
+    environment:
+      DATABASE_URL: postgres://${PG_DB_USER}:${PG_DB_PASSWORD}@postgres:5432/${IDS_DB_NAME}
+    depends_on:
+      - postgres
+    env_file:
+      - stack.env
+      
   ids:
     image: vainnor/vzdc_ids_v2:1.0.0
     environment:
