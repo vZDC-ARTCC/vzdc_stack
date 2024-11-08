@@ -23,7 +23,7 @@ services:
       - stack.env
       
   ids:
-    image: vainnor/vzdc_ids_v2:1.0.0
+    image: vainnor/vzdc_ids_v2:0.1.0
     environment:
       DATABASE_URL: postgres://${PG_DB_USER}:${PG_DB_PASSWORD}@postgres:5432/${IDS_DB_NAME}
     env_file:
