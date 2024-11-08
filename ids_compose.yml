@@ -1,16 +1,38 @@
 version: '3'
 
 services:
-  ids:
-    image: vainnor/vzdc_ids_v2:1.0.0
+  postgres:
+    image: postgres:alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${PG_DB_USER}
+      POSTGRES_PASSWORD: ${PG_DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
     env_file:
       - stack.env
+      
+  ids:
+    image: vainnor/vzdc_ids_v2:1.0.0
+    environment:
+      DATABASE_URL: postgres://${PG_DB_USER}:${PG_DB_PASSWORD}@postgres:5432/${IDS_DB_NAME}
+    env_file:
+      - stack.env
+    depends_on:
+      - migrations_ids
+      - postgres
     ports:
       - "3001:3001"
 
   updater:
     image: vainnor/vzdc_ids_v2_updater:1.0.0
+    environment:
+      DATABASE_URL: postgres://${PG_DB_USER}:${PG_DB_PASSWORD}@postgres:5432/${IDS_DB_NAME}
     env_file:
       - stack.env
+    depends_on:
+      - ids
     ports:
       - "3002:3002"
+volumes:
+  db_data:
